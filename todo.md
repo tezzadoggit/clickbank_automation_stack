@@ -117,4 +117,23 @@
 ### Testing
 - [x] Write vitest test for thumbnail generation
 - [ ] Test thumbnail → Gen-4 Turbo workflow
-- [ ] Create checkpoint with thumbnail generation
+- [x] Create checkpoint with thumbnail generation
+
+## Thumbnail Variation Selection Workflow
+
+### Backend Updates
+- [x] Update thumbnail generation to automatically create 3 variations (photorealistic, illustrated, minimal)
+- [x] Ensure all 3 thumbnails are returned in a single response
+- [x] Update video generation to accept selected thumbnail URL parameter
+
+### Frontend Updates
+- [x] Replace single thumbnail generation with automatic 3-variation generation
+- [x] Build thumbnail gallery UI with radio button selection
+- [x] Display all 3 thumbnails side-by-side for comparison
+- [x] Pass selected thumbnail URL to Gen-4 Turbo video generation
+- [x] Disable video generation until a thumbnail is selected (for Gen-4 Turbo)
+
+### Testing & Delivery
+- [ ] Test complete workflow: generate 3 → select 1 → generate video
+- [ ] Verify Gen-4 Turbo receives correct thumbnail URL
+- [ ] Create checkpoint with thumbnail selection workflow

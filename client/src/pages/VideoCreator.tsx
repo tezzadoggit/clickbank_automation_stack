@@ -24,8 +24,8 @@ export default function VideoCreator() {
   const [selectedVoiceId, setSelectedVoiceId] = useState("");
   const [voiceoverUrl, setVoiceoverUrl] = useState("");
   const [selectedModel, setSelectedModel] = useState<VideoModel>("veo3");
-  const [thumbnailUrl, setThumbnailUrl] = useState("");
-  const [thumbnailStyle, setThumbnailStyle] = useState<"photorealistic" | "illustrated" | "minimal">("photorealistic");
+  const [thumbnails, setThumbnails] = useState<Array<{imageUrl: string; s3Url: string; s3Key: string; prompt: string}>>([]);
+  const [selectedThumbnailUrl, setSelectedThumbnailUrl] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [trackingUrl, setTrackingUrl] = useState("");
   const [utmParams, setUtmParams] = useState({
@@ -66,13 +66,13 @@ export default function VideoCreator() {
     },
   });
 
-  const generateThumbnailMutation = trpc.video.generateThumbnail.useMutation({
+  const generateThumbnailsMutation = trpc.video.generateThumbnailVariations.useMutation({
     onSuccess: (data) => {
-      setThumbnailUrl(data.s3Url);
-      toast.success("Thumbnail generated successfully!");
+      setThumbnails(data);
+      toast.success(`${data.length} thumbnail variations generated!`);
     },
     onError: (error) => {
-      toast.error(`Failed to generate thumbnail: ${error.message}`);
+      toast.error(`Failed to generate thumbnails: ${error.message}`);
     },
   });
 
@@ -123,15 +123,23 @@ export default function VideoCreator() {
   };
 
   const handleGenerateVideo = () => {
-    if (!projectId) {
+    if (!voiceoverUrl) {
       toast.error("Please generate voice-over first");
       return;
     }
 
+    // Gen-4 Turbo requires a thumbnail
+    if (selectedModel === "gen4_turbo") {
+      if (!selectedThumbnailUrl) {
+        toast.error("Please generate and select a thumbnail for Gen-4 Turbo");
+        return;
+      }
+    }
+
     generateVideoMutation.mutate({
-      projectId,
+      projectId: projectId || 0,
       model: selectedModel,
-      thumbnailUrl: undefined, // TODO: Add thumbnail generation for gen4_turbo
+      thumbnailUrl: selectedThumbnailUrl || undefined,
     });
   };
 
@@ -417,56 +425,72 @@ export default function VideoCreator() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Thumbnail Generation (Optional, recommended for Gen-4 Turbo) */}
+              {/* Thumbnail Generation (3 Variations) */}
               <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">Thumbnail Generation (Optional)</Label>
+                    <Label className="text-base">Thumbnail Generation</Label>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Generate an eye-catching thumbnail. Required for Gen-4 Turbo, optional for Veo models.
+                      Generate 3 thumbnail variations. Required for Gen-4 Turbo, optional for Veo models.
                     </p>
                   </div>
-                  {thumbnailUrl && (
-                    <span className="text-xs text-green-600 font-medium">✓ Generated</span>
+                  {thumbnails.length > 0 && (
+                    <span className="text-xs text-green-600 font-medium">✓ {thumbnails.length} Generated</span>
                   )}
                 </div>
                 
-                {!thumbnailUrl ? (
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label className="text-sm">Thumbnail Style</Label>
-                      <Select value={thumbnailStyle} onValueChange={(val) => setThumbnailStyle(val as any)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="photorealistic">Photorealistic</SelectItem>
-                          <SelectItem value="illustrated">Illustrated</SelectItem>
-                          <SelectItem value="minimal">Minimal</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button
-                      onClick={() => generateThumbnailMutation.mutate({ niche, productInfo, style: thumbnailStyle })}
-                      disabled={generateThumbnailMutation.isPending}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      {generateThumbnailMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Generate Thumbnail
-                    </Button>
-                  </div>
+                {thumbnails.length === 0 ? (
+                  <Button
+                    onClick={() => generateThumbnailsMutation.mutate({ niche, productInfo, count: 3 })}
+                    disabled={generateThumbnailsMutation.isPending}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {generateThumbnailsMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generate 3 Thumbnail Variations
+                  </Button>
                 ) : (
-                  <div className="space-y-2">
-                    <img src={thumbnailUrl} alt="Generated thumbnail" className="w-full rounded-lg" />
+                  <div className="space-y-3">
+                    <RadioGroup value={selectedThumbnailUrl} onValueChange={setSelectedThumbnailUrl}>
+                      <div className="grid grid-cols-3 gap-3">
+                        {thumbnails.map((thumb, idx) => (
+                          <div key={thumb.s3Key} className="space-y-2">
+                            <div className="relative">
+                              <img 
+                                src={thumb.s3Url} 
+                                alt={`Thumbnail ${idx + 1}`} 
+                                className={`w-full rounded-lg border-2 cursor-pointer transition-all ${
+                                  selectedThumbnailUrl === thumb.s3Url 
+                                    ? 'border-primary ring-2 ring-primary' 
+                                    : 'border-transparent hover:border-muted-foreground'
+                                }`}
+                                onClick={() => setSelectedThumbnailUrl(thumb.s3Url)}
+                              />
+                              {selectedThumbnailUrl === thumb.s3Url && (
+                                <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1">
+                                  <Sparkles className="h-3 w-3" />
+                                </div>
+                              )}
+                            </div>
+                            <RadioGroupItem value={thumb.s3Url} id={`thumb-${idx}`} className="sr-only" />
+                            <Label 
+                              htmlFor={`thumb-${idx}`} 
+                              className="text-xs text-center block cursor-pointer"
+                            >
+                              Style {idx + 1}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </RadioGroup>
                     <Button
-                      onClick={() => setThumbnailUrl("")}
+                      onClick={() => { setThumbnails([]); setSelectedThumbnailUrl(""); }}
                       variant="ghost"
                       size="sm"
                       className="w-full"
                     >
-                      Regenerate Thumbnail
+                      Regenerate Thumbnails
                     </Button>
                   </div>
                 )}
@@ -500,12 +524,18 @@ export default function VideoCreator() {
               {!videoUrl ? (
                 <Button
                   onClick={handleGenerateVideo}
-                  disabled={generateVideoMutation.isPending}
+                  disabled={
+                    generateVideoMutation.isPending || 
+                    (selectedModel === "gen4_turbo" && !selectedThumbnailUrl)
+                  }
                   className="w-full"
                 >
                   {generateVideoMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   <Video className="mr-2 h-4 w-4" />
-                  Generate Video
+                  {selectedModel === "gen4_turbo" && !selectedThumbnailUrl 
+                    ? "Select a Thumbnail First" 
+                    : "Generate Video"
+                  }
                 </Button>
               ) : (
                 <div className="space-y-2">
