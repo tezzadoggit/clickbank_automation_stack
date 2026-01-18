@@ -1,6 +1,23 @@
-import { eq } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { 
+  InsertUser, 
+  users, 
+  offers, 
+  InsertOffer, 
+  landingPages, 
+  InsertLandingPage,
+  adCopyVariations,
+  InsertAdCopyVariation,
+  emailSequences,
+  InsertEmailSequence,
+  emails,
+  InsertEmail,
+  performanceMetrics,
+  InsertPerformanceMetric,
+  nicheStrategies,
+  InsertNicheStrategy
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +106,246 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ============================================================================
+// OFFER MANAGEMENT
+// ============================================================================
+
+export async function createOffer(offer: InsertOffer) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(offers).values(offer);
+  return result;
+}
+
+export async function getOffersByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(offers).where(eq(offers.userId, userId)).orderBy(desc(offers.createdAt));
+}
+
+export async function getOfferById(offerId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(offers).where(
+    and(eq(offers.id, offerId), eq(offers.userId, userId))
+  ).limit(1);
+  
+  return result[0];
+}
+
+export async function updateOffer(offerId: number, userId: number, updates: Partial<InsertOffer>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return db.update(offers).set(updates).where(
+    and(eq(offers.id, offerId), eq(offers.userId, userId))
+  );
+}
+
+export async function deleteOffer(offerId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return db.delete(offers).where(
+    and(eq(offers.id, offerId), eq(offers.userId, userId))
+  );
+}
+
+// ============================================================================
+// LANDING PAGE MANAGEMENT
+// ============================================================================
+
+export async function createLandingPage(page: InsertLandingPage) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(landingPages).values(page);
+  return result;
+}
+
+export async function getLandingPagesByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(landingPages).where(eq(landingPages.userId, userId)).orderBy(desc(landingPages.createdAt));
+}
+
+export async function getLandingPagesByOfferId(offerId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(landingPages).where(
+    and(eq(landingPages.offerId, offerId), eq(landingPages.userId, userId))
+  ).orderBy(desc(landingPages.createdAt));
+}
+
+export async function getLandingPageById(pageId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(landingPages).where(
+    and(eq(landingPages.id, pageId), eq(landingPages.userId, userId))
+  ).limit(1);
+  
+  return result[0];
+}
+
+export async function updateLandingPage(pageId: number, userId: number, updates: Partial<InsertLandingPage>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return db.update(landingPages).set(updates).where(
+    and(eq(landingPages.id, pageId), eq(landingPages.userId, userId))
+  );
+}
+
+// ============================================================================
+// AD COPY VARIATIONS
+// ============================================================================
+
+export async function createAdCopyVariation(variation: InsertAdCopyVariation) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(adCopyVariations).values(variation);
+  return result;
+}
+
+export async function getAdCopyVariationsByLandingPageId(landingPageId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(adCopyVariations).where(
+    and(eq(adCopyVariations.landingPageId, landingPageId), eq(adCopyVariations.userId, userId))
+  ).orderBy(desc(adCopyVariations.createdAt));
+}
+
+export async function updateAdCopyVariation(variationId: number, userId: number, updates: Partial<InsertAdCopyVariation>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  return db.update(adCopyVariations).set(updates).where(
+    and(eq(adCopyVariations.id, variationId), eq(adCopyVariations.userId, userId))
+  );
+}
+
+// ============================================================================
+// EMAIL SEQUENCES
+// ============================================================================
+
+export async function createEmailSequence(sequence: InsertEmailSequence) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(emailSequences).values(sequence);
+  return result;
+}
+
+export async function getEmailSequencesByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(emailSequences).where(eq(emailSequences.userId, userId)).orderBy(desc(emailSequences.createdAt));
+}
+
+export async function getEmailSequenceById(sequenceId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(emailSequences).where(
+    and(eq(emailSequences.id, sequenceId), eq(emailSequences.userId, userId))
+  ).limit(1);
+  
+  return result[0];
+}
+
+export async function createEmail(email: InsertEmail) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(emails).values(email);
+  return result;
+}
+
+export async function getEmailsBySequenceId(sequenceId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(emails).where(eq(emails.sequenceId, sequenceId)).orderBy(emails.dayNumber);
+}
+
+// ============================================================================
+// PERFORMANCE METRICS
+// ============================================================================
+
+export async function createPerformanceMetric(metric: InsertPerformanceMetric) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(performanceMetrics).values(metric);
+  return result;
+}
+
+export async function getPerformanceMetricsByOfferId(offerId: number, userId: number, limit = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(performanceMetrics).where(
+    and(eq(performanceMetrics.offerId, offerId), eq(performanceMetrics.userId, userId))
+  ).orderBy(desc(performanceMetrics.date)).limit(limit);
+}
+
+export async function getPerformanceMetricsByUserId(userId: number, limit = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(performanceMetrics).where(
+    eq(performanceMetrics.userId, userId)
+  ).orderBy(desc(performanceMetrics.date)).limit(limit);
+}
+
+export async function getPerformanceSummaryByOfferId(offerId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select({
+    totalImpressions: sql<number>`SUM(${performanceMetrics.impressions})`,
+    totalClicks: sql<number>`SUM(${performanceMetrics.clicks})`,
+    totalConversions: sql<number>`SUM(${performanceMetrics.conversions})`,
+    totalRevenue: sql<number>`SUM(${performanceMetrics.revenue})`,
+    totalAdSpend: sql<number>`SUM(${performanceMetrics.adSpend})`,
+  }).from(performanceMetrics).where(
+    and(eq(performanceMetrics.offerId, offerId), eq(performanceMetrics.userId, userId))
+  );
+  
+  return result[0];
+}
+
+// ============================================================================
+// NICHE STRATEGIES
+// ============================================================================
+
+export async function getNicheStrategiesByNiche(niche: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(nicheStrategies).where(eq(nicheStrategies.niche, niche as any)).orderBy(desc(nicheStrategies.effectiveness));
+}
+
+export async function getAllNicheStrategies() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return db.select().from(nicheStrategies).orderBy(nicheStrategies.niche, desc(nicheStrategies.effectiveness));
+}
+
+export async function createNicheStrategy(strategy: InsertNicheStrategy) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(nicheStrategies).values(strategy);
+  return result;
+}
