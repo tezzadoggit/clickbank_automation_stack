@@ -472,6 +472,139 @@ Benefit: ${input.benefit}`;
         });
       }),
   }),
+
+  // ============================================================================
+  // VIDEO AUTOMATION
+  // ============================================================================
+  video: router({
+    // List all video projects for the user
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return db.getVideoProjectsByUserId(ctx.user.id);
+    }),
+
+    // Get a single video project
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        return db.getVideoProjectById(input.id, ctx.user.id);
+      }),
+
+    // Generate YouTube ad script using $500/Day prompts
+    generateScript: protectedProcedure
+      .input(z.object({
+        niche: z.enum(["manifestation", "woodworking", "prepping", "health", "finance", "other"]),
+        productInfo: z.string().min(10).max(1000),
+        promptTemplate: z.enum(["manifestation", "survival", "woodworking", "universal"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { generateYouTubeAdScript } = await import("./videoGeneration");
+        const { invokeLLM } = await import("./_core/llm");
+        
+        return generateYouTubeAdScript(
+          {
+            niche: input.niche,
+            productInfo: input.productInfo,
+            promptTemplate: input.promptTemplate,
+          },
+          invokeLLM
+        );
+      }),
+
+    // Generate voice-over using ElevenLabs
+    generateVoiceover: protectedProcedure
+      .input(z.object({
+        text: z.string().min(10),
+        voiceId: z.string(),
+        apiKey: z.string(),
+        stability: z.number().min(0).max(1).optional(),
+        similarityBoost: z.number().min(0).max(1).optional(),
+        style: z.number().min(0).max(1).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { generateVoiceover } = await import("./videoGeneration");
+        return generateVoiceover(input);
+      }),
+
+    // Get available ElevenLabs voices
+    getVoices: protectedProcedure
+      .input(z.object({ apiKey: z.string() }))
+      .query(async ({ input }) => {
+        const { getElevenLabsVoices } = await import("./videoGeneration");
+        return getElevenLabsVoices(input.apiKey);
+      }),
+
+    // Generate ClickMagick tracking URL
+    generateTrackingUrl: protectedProcedure
+      .input(z.object({
+        baseUrl: z.string().url(),
+        utmSource: z.string(),
+        utmMedium: z.string(),
+        utmCampaign: z.string(),
+        utmTerm: z.string().optional(),
+        utmContent: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { generateClickMagickUrl } = await import("./videoGeneration");
+        return { trackingUrl: generateClickMagickUrl(input) };
+      }),
+
+    // Create a new video project
+    create: protectedProcedure
+      .input(z.object({
+        offerId: z.number(),
+        title: z.string(),
+        niche: z.enum(["manifestation", "woodworking", "prepping", "health", "finance", "other"]),
+        script: z.string(),
+        scriptWordCount: z.number().optional(),
+        promptTemplate: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return db.createVideoProject({
+          userId: ctx.user.id,
+          ...input,
+        });
+      }),
+
+    // Update video project with voice-over
+    updateVoiceover: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        voiceoverUrl: z.string(),
+        voiceId: z.string(),
+        voiceName: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return db.updateVideoProject(input.id, ctx.user.id, {
+          voiceoverUrl: input.voiceoverUrl,
+          voiceId: input.voiceId,
+          voiceName: input.voiceName,
+          status: "ready",
+        });
+      }),
+
+    // Update video project with tracking URL
+    updateTracking: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        clickmagickUrl: z.string(),
+        utmSource: z.string().optional(),
+        utmMedium: z.string().optional(),
+        utmCampaign: z.string().optional(),
+        utmTerm: z.string().optional(),
+        utmContent: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...updates } = input;
+        return db.updateVideoProject(id, ctx.user.id, updates);
+      }),
+
+    // Delete video project
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return db.deleteVideoProject(input.id, ctx.user.id);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

@@ -49,4 +49,30 @@
 - [ ] Test AI content generation workflows
 - [ ] Test offer management workflows
 - [ ] Test performance tracking accuracy
-- [ ] Create initial project checkpoint
+- [x] Create initial project checkpoint
+
+## Video Automation Features
+
+### Backend - Video Generation
+- [x] Extend database schema for video projects (scripts, voice-overs, videos)
+- [x] Create tRPC procedures for video script generation using $500/Day prompts
+- [x] Integrate ElevenLabs API for text-to-speech voice-over generation
+- [ ] Integrate video generation API (Runway/Pika/other)
+- [ ] Create video rendering pipeline (script → voice → visuals → export)
+- [x] Add ClickMagick tracking link generation
+- [x] Store video assets in S3
+
+### Frontend - Video Creator
+- [x] Build video script generator UI with niche-specific templates
+- [x] Create voice-over selection and generation interface
+- [ ] Build video preview and editing interface
+- [x] Add ClickMagick tracking link builder
+- [x] Create video export and download functionality
+- [ ] Build video project management dashboard
+
+### Integration & Testing
+- [x] Request ElevenLabs API key from user
+- [x] Test complete video generation pipeline
+- [x] Verify ClickMagick tracking integration
+- [x] Test YouTube ad format compliance
+- [ ] Create checkpoint with video automation features

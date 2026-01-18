@@ -14,6 +14,7 @@ import EmailSequences from "./pages/EmailSequences";
 import Performance from "./pages/Performance";
 import NicheStrategies from "./pages/NicheStrategies";
 import ComplianceChecker from "./pages/ComplianceChecker";
+import VideoCreator from "./pages/VideoCreator";
 
 function Router() {
   return (
@@ -74,6 +75,12 @@ function Router() {
       <Route path={"/compliance"}>
         <DashboardLayout>
           <ComplianceChecker />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/video-creator"}>
+        <DashboardLayout>
+          <VideoCreator />
         </DashboardLayout>
       </Route>
       

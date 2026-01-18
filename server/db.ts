@@ -349,3 +349,79 @@ export async function createNicheStrategy(strategy: InsertNicheStrategy) {
   const result = await db.insert(nicheStrategies).values(strategy);
   return result;
 }
+
+
+// ============================================================================
+// VIDEO PROJECTS
+// ============================================================================
+
+import { videoProjects, InsertVideoProject, VideoProject } from "../drizzle/schema";
+
+export async function getVideoProjectsByUserId(userId: number): Promise<VideoProject[]> {
+  const dbConn = await getDb();
+  if (!dbConn) return [];
+  
+  return dbConn.select().from(videoProjects).where(eq(videoProjects.userId, userId));
+}
+
+export async function getVideoProjectById(id: number, userId: number): Promise<VideoProject | undefined> {
+  const dbConn = await getDb();
+  if (!dbConn) return undefined;
+  
+  const result = await dbConn
+    .select()
+    .from(videoProjects)
+    .where(eq(videoProjects.id, id))
+    .limit(1);
+  
+  if (result.length === 0 || result[0]!.userId !== userId) {
+    return undefined;
+  }
+  
+  return result[0];
+}
+
+export async function createVideoProject(data: Omit<InsertVideoProject, "id">): Promise<VideoProject> {
+  const dbConn = await getDb();
+  if (!dbConn) throw new Error("Database not available");
+  
+  const result = await dbConn.insert(videoProjects).values(data);
+  const insertedId = Number(result[0].insertId);
+  
+  const created = await getVideoProjectById(insertedId, data.userId);
+  if (!created) throw new Error("Failed to retrieve created video project");
+  
+  return created;
+}
+
+export async function updateVideoProject(
+  id: number,
+  userId: number,
+  updates: Partial<Omit<VideoProject, "id" | "userId" | "createdAt">>
+): Promise<VideoProject | undefined> {
+  const dbConn = await getDb();
+  if (!dbConn) return undefined;
+  
+  // Verify ownership
+  const existing = await getVideoProjectById(id, userId);
+  if (!existing) return undefined;
+  
+  await dbConn
+    .update(videoProjects)
+    .set(updates)
+    .where(eq(videoProjects.id, id));
+  
+  return getVideoProjectById(id, userId);
+}
+
+export async function deleteVideoProject(id: number, userId: number): Promise<boolean> {
+  const dbConn = await getDb();
+  if (!dbConn) return false;
+  
+  // Verify ownership
+  const existing = await getVideoProjectById(id, userId);
+  if (!existing) return false;
+  
+  await dbConn.delete(videoProjects).where(eq(videoProjects.id, id));
+  return true;
+}
