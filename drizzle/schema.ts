@@ -35,8 +35,10 @@ export const offers = mysqlTable("offers", {
   // Basic offer info
   productName: varchar("productName", { length: 255 }).notNull(),
   vendor: varchar("vendor", { length: 255 }).notNull(),
-  clickbankId: varchar("clickbankId", { length: 100 }).notNull(),
+  clickbankId: varchar("clickbankId", { length: 100 }),
   niche: mysqlEnum("niche", ["manifestation", "woodworking", "prepping", "health", "finance", "other"]).notNull(),
+  source: mysqlEnum("source", ["clickbank", "custom"]).default("clickbank").notNull(),
+  sourceUrl: text("sourceUrl"),
   
   // ClickBank metrics
   gravity: int("gravity"),

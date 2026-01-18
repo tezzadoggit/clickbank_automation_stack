@@ -114,13 +114,37 @@ export const appRouter = router({
           recommendationStatus: evaluation.recommendation as any,
           notes: JSON.stringify(evaluation),
         });
-
         return evaluation;
+      }),
+
+    importFromUrl: protectedProcedure
+      .input(z.object({
+        url: z.string().url(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { scrapeProductInfo } = await import("./urlScraper");
+        const productInfo = await scrapeProductInfo(input.url);
+
+        // Create offer from scraped data
+        await db.createOffer({
+          userId: ctx.user.id,
+          productName: productInfo.productName,
+          vendor: productInfo.vendor,
+          clickbankId: null,
+          niche: productInfo.niche,
+          source: "custom",
+          sourceUrl: input.url,
+          salesPageUrl: input.url,
+          description: productInfo.description,
+          targetAudience: productInfo.targetAudience,
+        });
+
+        return { success: true, productInfo };
       }),
   }),
 
   // ============================================================================
-  // LANDING PAGE MANAGEMENT
+  // LANDING PAGES MANAGEMENT
   // ============================================================================
   landingPages: router({
     list: protectedProcedure.query(async ({ ctx }) => {

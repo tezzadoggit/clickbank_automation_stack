@@ -134,6 +134,28 @@
 - [x] Disable video generation until a thumbnail is selected (for Gen-4 Turbo)
 
 ### Testing & Delivery
-- [ ] Test complete workflow: generate 3 → select 1 → generate video
-- [ ] Verify Gen-4 Turbo receives correct thumbnail URL
-- [ ] Create checkpoint with thumbnail selection workflow
+- [x] Test complete workflow: generate 3 → select 1 → generate video
+- [x] Verify Gen-4 Turbo receives correct thumbnail URL
+- [x] Create checkpoint with thumbnail selection workflow
+
+## Custom URL Offer Import Feature
+
+### Database & Backend
+- [x] Add `source` field to offers table (enum: 'clickbank' | 'custom')
+- [x] Add `sourceUrl` field to store the original URL
+- [x] Create web scraping helper using Gemini to extract product info from any URL
+- [x] Add tRPC procedure for custom URL import with scraping
+- [x] Update offer creation to support both ClickBank and custom sources
+
+### Frontend
+- [x] Add "Import from URL" button to Offers page
+- [x] Create URL input dialog with paste functionality
+- [x] Display scraped product info for review/editing before saving
+- [x] Show source badge (ClickBank vs Custom) on offer cards
+- [x] Update Video Creator and other features to work with custom offers
+
+### Testing & Delivery
+- [x] Test URL scraping with Gamma site funnel
+- [x] Test with other affiliate networks (JVZoo, WarriorPlus)
+- [x] Verify all automation features work with custom offers
+- [ ] Create checkpoint with custom URL import feature
