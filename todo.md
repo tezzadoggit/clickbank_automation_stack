@@ -98,3 +98,23 @@
 - [ ] Test complete pipeline: script → voice → video
 - [ ] Verify video quality and audio sync
 - [ ] Create checkpoint with Runway integration
+
+## Gemini Thumbnail Generation
+
+### Backend - Image Generation
+- [x] Create Gemini image generation helper using Imagen 4.0
+- [x] Add thumbnail prompt templates for each niche
+- [x] Store generated thumbnails in S3
+- [x] Add tRPC procedure for thumbnail generation
+- [ ] Update video generation to accept thumbnail URL
+
+### Frontend - Thumbnail Generator
+- [x] Add thumbnail generation step to Video Creator
+- [x] Display generated thumbnail preview
+- [x] Allow thumbnail regeneration with different prompts
+- [ ] Auto-populate thumbnail URL for Gen-4 Turbo
+
+### Testing
+- [x] Write vitest test for thumbnail generation
+- [ ] Test thumbnail → Gen-4 Turbo workflow
+- [ ] Create checkpoint with thumbnail generation

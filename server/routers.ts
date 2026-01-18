@@ -533,6 +533,30 @@ Benefit: ${input.benefit}`;
         return getElevenLabsVoices(input.apiKey);
       }),
 
+    // Generate thumbnail using Gemini Imagen
+    generateThumbnail: protectedProcedure
+      .input(z.object({
+        niche: z.enum(["manifestation", "woodworking", "prepping", "health", "finance", "other"]),
+        productInfo: z.string().min(10).max(1000),
+        style: z.enum(["photorealistic", "illustrated", "minimal"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { generateThumbnail } = await import("./geminiImageGeneration");
+        return generateThumbnail(input);
+      }),
+
+    // Generate multiple thumbnail variations
+    generateThumbnailVariations: protectedProcedure
+      .input(z.object({
+        niche: z.enum(["manifestation", "woodworking", "prepping", "health", "finance", "other"]),
+        productInfo: z.string().min(10).max(1000),
+        count: z.number().min(1).max(3).default(3),
+      }))
+      .mutation(async ({ input }) => {
+        const { generateThumbnailVariations } = await import("./geminiImageGeneration");
+        return generateThumbnailVariations(input);
+      }),
+
     // Generate ClickMagick tracking URL
     generateTrackingUrl: protectedProcedure
       .input(z.object({

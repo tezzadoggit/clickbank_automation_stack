@@ -24,6 +24,8 @@ export default function VideoCreator() {
   const [selectedVoiceId, setSelectedVoiceId] = useState("");
   const [voiceoverUrl, setVoiceoverUrl] = useState("");
   const [selectedModel, setSelectedModel] = useState<VideoModel>("veo3");
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [thumbnailStyle, setThumbnailStyle] = useState<"photorealistic" | "illustrated" | "minimal">("photorealistic");
   const [videoUrl, setVideoUrl] = useState("");
   const [trackingUrl, setTrackingUrl] = useState("");
   const [utmParams, setUtmParams] = useState({
@@ -61,6 +63,16 @@ export default function VideoCreator() {
     },
     onError: (error) => {
       toast.error(`Failed to generate voice-over: ${error.message}`);
+    },
+  });
+
+  const generateThumbnailMutation = trpc.video.generateThumbnail.useMutation({
+    onSuccess: (data) => {
+      setThumbnailUrl(data.s3Url);
+      toast.success("Thumbnail generated successfully!");
+    },
+    onError: (error) => {
+      toast.error(`Failed to generate thumbnail: ${error.message}`);
     },
   });
 
@@ -405,6 +417,61 @@ export default function VideoCreator() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Thumbnail Generation (Optional, recommended for Gen-4 Turbo) */}
+              <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">Thumbnail Generation (Optional)</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Generate an eye-catching thumbnail. Required for Gen-4 Turbo, optional for Veo models.
+                    </p>
+                  </div>
+                  {thumbnailUrl && (
+                    <span className="text-xs text-green-600 font-medium">✓ Generated</span>
+                  )}
+                </div>
+                
+                {!thumbnailUrl ? (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label className="text-sm">Thumbnail Style</Label>
+                      <Select value={thumbnailStyle} onValueChange={(val) => setThumbnailStyle(val as any)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="photorealistic">Photorealistic</SelectItem>
+                          <SelectItem value="illustrated">Illustrated</SelectItem>
+                          <SelectItem value="minimal">Minimal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      onClick={() => generateThumbnailMutation.mutate({ niche, productInfo, style: thumbnailStyle })}
+                      disabled={generateThumbnailMutation.isPending}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {generateThumbnailMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Generate Thumbnail
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <img src={thumbnailUrl} alt="Generated thumbnail" className="w-full rounded-lg" />
+                    <Button
+                      onClick={() => setThumbnailUrl("")}
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                    >
+                      Regenerate Thumbnail
+                    </Button>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label>Video Generation Model</Label>
                 <RadioGroup value={selectedModel} onValueChange={(val) => setSelectedModel(val as VideoModel)}>
