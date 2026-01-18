@@ -604,6 +604,54 @@ Benefit: ${input.benefit}`;
       .mutation(async ({ ctx, input }) => {
         return db.deleteVideoProject(input.id, ctx.user.id);
       }),
+
+    // Generate video using Runway (Veo 3, Veo 3.1 Fast, or Gen-4 Turbo)
+    generateVideoRunway: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        model: z.enum(["veo3", "veo3.1_fast", "gen4_turbo"]),
+        thumbnailUrl: z.string().optional(), // Required for gen4_turbo
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { generateYouTubeAdVideo } = await import("./runwayGeneration");
+        
+        // Get project details
+        const project = await db.getVideoProjectById(input.projectId, ctx.user.id);
+        if (!project) {
+          throw new Error("Video project not found");
+        }
+
+        // Generate video
+        const result = await generateYouTubeAdVideo({
+          script: project.script,
+          niche: project.niche,
+          model: input.model,
+          thumbnailUrl: input.thumbnailUrl,
+        });
+
+        // Update project with video URL
+        await db.updateVideoProject(input.projectId, ctx.user.id, {
+          videoUrl: result.s3Url,
+          status: "ready",
+        });
+
+        return {
+          success: true,
+          videoUrl: result.s3Url,
+          model: result.model,
+          duration: result.duration,
+        };
+      }),
+
+    // Get model information for UI display
+    getModelInfo: protectedProcedure
+      .input(z.object({
+        model: z.enum(["veo3", "veo3.1_fast", "gen4_turbo"]),
+      }))
+      .query(async ({ input }) => {
+        const { getModelInfo } = await import("./runwayGeneration");
+        return getModelInfo(input.model);
+      }),
   }),
 });
 

@@ -75,4 +75,26 @@
 - [x] Test complete video generation pipeline
 - [x] Verify ClickMagick tracking integration
 - [x] Test YouTube ad format compliance
-- [ ] Create checkpoint with video automation features
+- [x] Create checkpoint with video automation features
+
+## Runway Gen-4 Turbo Integration
+
+### Backend - Video Generation
+- [x] Install Runway SDK (@runwayml/sdk)
+- [x] Request Runway API key from user
+- [x] Create Runway video generation helper functions
+- [ ] Add tRPC procedures for text-to-video generation
+- [ ] Implement video-audio synchronization logic
+- [ ] Store generated videos in S3
+
+### Frontend - Video Creator Enhancement
+- [ ] Add video generation step to Video Creator UI
+- [ ] Display video preview after generation
+- [ ] Add download button for final video file
+- [ ] Show generation progress and status
+
+### Testing & Deployment
+- [ ] Write vitest tests for Runway integration
+- [ ] Test complete pipeline: script → voice → video
+- [ ] Verify video quality and audio sync
+- [ ] Create checkpoint with Runway integration

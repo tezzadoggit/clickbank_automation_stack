@@ -103,6 +103,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@19.2.1(@types/react@19.2.1))(@types/react@19.2.1)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      '@runwayml/sdk':
+        specifier: ^3.11.0
+        version: 3.11.0
       '@tanstack/react-query':
         specifier: ^5.90.2
         version: 5.90.2(react@19.2.1)
@@ -1779,6 +1782,10 @@ packages:
     resolution: {integrity: sha512-bf9PtUa0u8IXDVxzRToFQKsNCRz9qLYfR/MpECxl4mRoWYjAeFjgxj1XdZr2M/GNVpT05p+LgQOHopYDlUu6/w==}
     cpu: [x64]
     os: [win32]
+
+  '@runwayml/sdk@3.11.0':
+    resolution: {integrity: sha512-BDAywDbfS3/TCN5DpRYBdmaJizbX8gbuxKxqPh9pTl5O2f+tOiLZjj4ydqb9HJU7dMPdAMYdtpqtDUT3/M6Pkg==}
+    hasBin: true
 
   '@shikijs/core@3.14.0':
     resolution: {integrity: sha512-qRSeuP5vlYHCNUIrpEBQFO7vSkR7jn7Kv+5X3FO/zBKVDGQbcnlScD3XhkrHi/R8Ltz0kEjvFR9Szp/XMRbFMw==}
@@ -5973,6 +5980,8 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.52.4':
     optional: true
+
+  '@runwayml/sdk@3.11.0': {}
 
   '@shikijs/core@3.14.0':
     dependencies:

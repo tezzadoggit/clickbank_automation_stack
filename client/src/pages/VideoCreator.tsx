@@ -6,11 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Loader2, Video, Mic, Link as LinkIcon, Download } from "lucide-react";
+import { Loader2, Video, Mic, Link as LinkIcon, Download, Sparkles, Zap } from "lucide-react";
+
+type VideoModel = "veo3" | "veo3.1_fast" | "gen4_turbo";
 
 export default function VideoCreator() {
   const [step, setStep] = useState(1);
+  const [projectId, setProjectId] = useState<number | null>(null);
   const [selectedOfferId, setSelectedOfferId] = useState<number | null>(null);
   const [productInfo, setProductInfo] = useState("");
   const [niche, setNiche] = useState<"manifestation" | "woodworking" | "prepping" | "health" | "finance" | "other">("manifestation");
@@ -19,10 +23,12 @@ export default function VideoCreator() {
   const [wordCount, setWordCount] = useState(0);
   const [selectedVoiceId, setSelectedVoiceId] = useState("");
   const [voiceoverUrl, setVoiceoverUrl] = useState("");
+  const [selectedModel, setSelectedModel] = useState<VideoModel>("veo3");
+  const [videoUrl, setVideoUrl] = useState("");
   const [trackingUrl, setTrackingUrl] = useState("");
   const [utmParams, setUtmParams] = useState({
     source: "",
-    medium: "",
+    medium: "youtube",
     campaign: "",
     term: "",
     content: "",
@@ -49,11 +55,22 @@ export default function VideoCreator() {
   const generateVoiceoverMutation = trpc.video.generateVoiceover.useMutation({
     onSuccess: (data) => {
       setVoiceoverUrl(data.audioUrl);
+      // Note: projectId would need to be returned from the mutation
       setStep(4);
       toast.success("Voice-over generated successfully!");
     },
     onError: (error) => {
       toast.error(`Failed to generate voice-over: ${error.message}`);
+    },
+  });
+
+  const generateVideoMutation = trpc.video.generateVideoRunway.useMutation({
+    onSuccess: (data) => {
+      setVideoUrl(data.videoUrl);
+      toast.success(`Video generated with ${data.model}! Duration: ${data.duration}s`);
+    },
+    onError: (error) => {
+      toast.error(`Failed to generate video: ${error.message}`);
     },
   });
 
@@ -93,6 +110,19 @@ export default function VideoCreator() {
     });
   };
 
+  const handleGenerateVideo = () => {
+    if (!projectId) {
+      toast.error("Please generate voice-over first");
+      return;
+    }
+
+    generateVideoMutation.mutate({
+      projectId,
+      model: selectedModel,
+      thumbnailUrl: undefined, // TODO: Add thumbnail generation for gen4_turbo
+    });
+  };
+
   const handleGenerateTrackingUrl = () => {
     const selectedOffer = offers?.find((o) => o.id === selectedOfferId);
     if (!selectedOffer || !selectedOffer.affiliatePageUrl) {
@@ -115,12 +145,36 @@ export default function VideoCreator() {
     });
   };
 
+  const modelInfo = {
+    veo3: {
+      name: "Veo 3 (FREE)",
+      description: "Google's Veo 3 via Gemini API - Zero cost",
+      cost: "FREE",
+      icon: Sparkles,
+      color: "text-green-600",
+    },
+    "veo3.1_fast": {
+      name: "Veo 3.1 Fast",
+      description: "Fast text-to-video via Runway",
+      cost: "$1.20 per 8s",
+      icon: Zap,
+      color: "text-blue-600",
+    },
+    gen4_turbo: {
+      name: "Gen-4 Turbo",
+      description: "Highest quality image-to-video",
+      cost: "$0.25 per 5s",
+      icon: Video,
+      color: "text-purple-600",
+    },
+  };
+
   return (
     <div className="container mx-auto py-8 max-w-4xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">YouTube Ad Video Creator</h1>
         <p className="text-muted-foreground">
-          Generate compliant YouTube ad scripts and voice-overs using proven $500/Day formulas
+          Generate compliant YouTube ad scripts, voice-overs, and videos using proven $500/Day formulas
         </p>
       </div>
 
@@ -130,7 +184,7 @@ export default function VideoCreator() {
           { num: 1, label: "Offer & Info" },
           { num: 2, label: "Generate Script" },
           { num: 3, label: "Voice-over" },
-          { num: 4, label: "Tracking & Export" },
+          { num: 4, label: "Video & Export" },
         ].map((s, idx) => (
           <div key={s.num} className="flex items-center flex-1">
             <div className="flex flex-col items-center flex-1">
@@ -249,40 +303,41 @@ export default function VideoCreator() {
           <CardHeader>
             <CardTitle>Step 2: Generate YouTube Ad Script</CardTitle>
             <CardDescription>
-              Using the $500/Day {promptTemplate} template to create a compliant, high-converting script
+              AI will create a compliant script using the $500/Day formula for your niche
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 bg-muted rounded-lg">
-              <h3 className="font-semibold mb-2">Product Info:</h3>
-              <p className="text-sm">{productInfo}</p>
-            </div>
-
-            <Button
-              onClick={handleGenerateScript}
-              disabled={generateScriptMutation.isPending}
-              className="w-full"
-            >
-              {generateScriptMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating Script...
-                </>
-              ) : (
-                <>
-                  <Video className="mr-2 h-4 w-4" />
-                  Generate Script
-                </>
-              )}
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => setStep(1)}
-              className="w-full"
-            >
-              Back
-            </Button>
+            {script ? (
+              <>
+                <div className="space-y-2">
+                  <Label>Generated Script ({wordCount} words)</Label>
+                  <Textarea
+                    value={script}
+                    onChange={(e) => setScript(e.target.value)}
+                    rows={12}
+                    className="resize-none font-mono text-sm"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={() => setStep(3)} className="flex-1">
+                    Continue to Voice-over
+                  </Button>
+                  <Button onClick={handleGenerateScript} variant="outline" disabled={generateScriptMutation.isPending}>
+                    {generateScriptMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Regenerate
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <Button
+                onClick={handleGenerateScript}
+                disabled={generateScriptMutation.isPending}
+                className="w-full"
+              >
+                {generateScriptMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Generate Script with AI
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
@@ -293,124 +348,144 @@ export default function VideoCreator() {
           <CardHeader>
             <CardTitle>Step 3: Generate Voice-over</CardTitle>
             <CardDescription>
-              Your script is ready! Now choose a voice and generate the audio
+              Select a voice and generate professional audio with ElevenLabs
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="p-4 bg-muted rounded-lg max-h-64 overflow-y-auto">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold">Generated Script:</h3>
-                <span className="text-xs text-muted-foreground">{wordCount} words</span>
-              </div>
-              <p className="text-sm whitespace-pre-wrap">{script}</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="voice">Select Voice</Label>
-              <Select value={selectedVoiceId} onValueChange={setSelectedVoiceId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a voice..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {voices?.map((voice) => (
-                    <SelectItem key={voice.voice_id} value={voice.voice_id}>
-                      {voice.name} {voice.labels?.accent ? `(${voice.labels.accent})` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button
-              onClick={handleGenerateVoiceover}
-              disabled={!selectedVoiceId || generateVoiceoverMutation.isPending}
-              className="w-full"
-            >
-              {generateVoiceoverMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating Voice-over...
-                </>
-              ) : (
-                <>
+            {!voiceoverUrl ? (
+              <>
+                <div className="space-y-2">
+                  <Label>Select Voice</Label>
+                  <Select value={selectedVoiceId} onValueChange={setSelectedVoiceId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a voice..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {voices?.map((voice) => (
+                        <SelectItem key={voice.voice_id} value={voice.voice_id}>
+                          {voice.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={handleGenerateVoiceover}
+                  disabled={generateVoiceoverMutation.isPending || !selectedVoiceId}
+                  className="w-full"
+                >
+                  {generateVoiceoverMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   <Mic className="mr-2 h-4 w-4" />
                   Generate Voice-over
-                </>
-              )}
-            </Button>
-
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
-                Back
-              </Button>
-              <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
-                Start Over
-              </Button>
-            </div>
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Voice-over Audio</Label>
+                  <audio controls src={voiceoverUrl} className="w-full" />
+                </div>
+                <Button onClick={() => setStep(4)} className="w-full">
+                  Continue to Video Generation
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* Step 4: Tracking & Export */}
+      {/* Step 4: Generate Video & Export */}
       {step === 4 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 4: Add Tracking & Export</CardTitle>
-            <CardDescription>
-              Generate your ClickMagick tracking URL and export your video assets
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {voiceoverUrl && (
-              <div className="p-4 bg-muted rounded-lg">
-                <h3 className="font-semibold mb-2">Voice-over Audio:</h3>
-                <audio controls className="w-full" src={voiceoverUrl} />
-                <Button variant="outline" size="sm" className="mt-2" asChild>
-                  <a href={voiceoverUrl} download>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download Audio
-                  </a>
-                </Button>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Step 4: Generate Video</CardTitle>
+              <CardDescription>
+                Choose your video generation model and create the final video
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Video Generation Model</Label>
+                <RadioGroup value={selectedModel} onValueChange={(val) => setSelectedModel(val as VideoModel)}>
+                  {(Object.keys(modelInfo) as VideoModel[]).map((model) => {
+                    const info = modelInfo[model];
+                    const Icon = info.icon;
+                    return (
+                      <div key={model} className="flex items-center space-x-2 border rounded-lg p-4">
+                        <RadioGroupItem value={model} id={model} />
+                        <Label htmlFor={model} className="flex-1 cursor-pointer">
+                          <div className="flex items-start gap-3">
+                            <Icon className={`h-5 w-5 mt-0.5 ${info.color}`} />
+                            <div className="flex-1">
+                              <div className="font-semibold">{info.name}</div>
+                              <div className="text-sm text-muted-foreground">{info.description}</div>
+                            </div>
+                            <div className="text-sm font-semibold">{info.cost}</div>
+                          </div>
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </RadioGroup>
               </div>
-            )}
 
-            <div className="space-y-4">
-              <h3 className="font-semibold">ClickMagick Tracking URL</h3>
+              {!videoUrl ? (
+                <Button
+                  onClick={handleGenerateVideo}
+                  disabled={generateVideoMutation.isPending}
+                  className="w-full"
+                >
+                  {generateVideoMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Video className="mr-2 h-4 w-4" />
+                  Generate Video
+                </Button>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Generated Video</Label>
+                  <video controls src={videoUrl} className="w-full rounded-lg" />
+                  <a href={videoUrl} download className="w-full">
+                    <Button variant="outline" className="w-full">
+                      <Download className="mr-2 h-4 w-4" />
+                      Download Video
+                    </Button>
+                  </a>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>ClickMagick Tracking URL</CardTitle>
+              <CardDescription>
+                Generate a tracking URL with UTM parameters for performance monitoring
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="utmSource">Source *</Label>
+                  <Label>Source *</Label>
                   <Input
-                    id="utmSource"
                     value={utmParams.source}
                     onChange={(e) => setUtmParams({ ...utmParams, source: e.target.value })}
-                    placeholder="product/niche name"
+                    placeholder="e.g., manifestation"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="utmMedium">Medium *</Label>
+                  <Label>Medium *</Label>
                   <Input
-                    id="utmMedium"
                     value={utmParams.medium}
                     onChange={(e) => setUtmParams({ ...utmParams, medium: e.target.value })}
-                    placeholder="account nickname"
+                    placeholder="e.g., youtube"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="utmCampaign">Campaign *</Label>
+                <div className="space-y-2 col-span-2">
+                  <Label>Campaign *</Label>
                   <Input
-                    id="utmCampaign"
                     value={utmParams.campaign}
                     onChange={(e) => setUtmParams({ ...utmParams, campaign: e.target.value })}
-                    placeholder="campaign name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="utmTerm">Term (Optional)</Label>
-                  <Input
-                    id="utmTerm"
-                    value={utmParams.term}
-                    onChange={(e) => setUtmParams({ ...utmParams, term: e.target.value })}
-                    placeholder="video name"
+                    placeholder="e.g., neuro-energizer-jan-2026"
                   />
                 </div>
               </div>
@@ -418,72 +493,65 @@ export default function VideoCreator() {
               <Button
                 onClick={handleGenerateTrackingUrl}
                 disabled={generateTrackingUrlMutation.isPending}
+                variant="outline"
                 className="w-full"
               >
-                {generateTrackingUrlMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <LinkIcon className="mr-2 h-4 w-4" />
-                    Generate Tracking URL
-                  </>
-                )}
+                {generateTrackingUrlMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <LinkIcon className="mr-2 h-4 w-4" />
+                Generate Tracking URL
               </Button>
 
               {trackingUrl && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <Label className="mb-2 block">Your Tracking URL:</Label>
-                  <Input value={trackingUrl} readOnly className="font-mono text-xs" />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => {
-                      navigator.clipboard.writeText(trackingUrl);
-                      toast.success("Copied to clipboard!");
-                    }}
-                  >
-                    Copy URL
-                  </Button>
+                <div className="space-y-2">
+                  <Label>Your Tracking URL</Label>
+                  <div className="flex gap-2">
+                    <Input value={trackingUrl} readOnly className="font-mono text-sm" />
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(trackingUrl);
+                        toast.success("Copied to clipboard!");
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </div>
                 </div>
               )}
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="pt-4 border-t">
-              <h3 className="font-semibold mb-4">Export Assets</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <Button variant="outline" onClick={() => {
-                  const blob = new Blob([script], { type: "text/plain" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = "youtube-ad-script.txt";
-                  a.click();
-                }}>
+          <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+            <CardHeader>
+              <CardTitle>Export Your Assets</CardTitle>
+              <CardDescription>Download all generated files for your YouTube ad campaign</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <a href={`data:text/plain;charset=utf-8,${encodeURIComponent(script)}`} download="script.txt" className="w-full">
+                <Button variant="outline" className="w-full justify-start">
                   <Download className="mr-2 h-4 w-4" />
-                  Download Script
+                  Download Script (.txt)
                 </Button>
-                {voiceoverUrl && (
-                  <Button variant="outline" asChild>
-                    <a href={voiceoverUrl} download>
-                      <Download className="mr-2 h-4 w-4" />
-                      Download Audio
-                    </a>
+              </a>
+              {voiceoverUrl && (
+                <a href={voiceoverUrl} download="voiceover.mp3" className="w-full">
+                  <Button variant="outline" className="w-full justify-start">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Voice-over (.mp3)
                   </Button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
-                Create Another Video
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                </a>
+              )}
+              {videoUrl && (
+                <a href={videoUrl} download="video.mp4" className="w-full">
+                  <Button variant="outline" className="w-full justify-start">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Video (.mp4)
+                  </Button>
+                </a>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
